@@ -1,0 +1,63 @@
+import pandas as pd
+from sklearn.ensemble import RandomForestRegressor
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.compose import ColumnTransformer
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+
+# Read the data
+crop_data = pd.read_csv('77.csv')  # Replace 'your_data.csv' with your dataset
+
+# Define features and target variables
+X = crop_data[['year','crop', 'season', 'temperature', 'humidity']]
+y_production = crop_data['production']
+y_demand = crop_data['demand']
+
+# Preprocessing for categorical features (crop and season)
+categorical_features = ['crop', 'season']
+categorical_transformer = Pipeline(steps=[
+    ('onehot', OneHotEncoder(handle_unknown='ignore'))
+])
+
+# Combine preprocessing steps
+preprocessor = ColumnTransformer(
+    transformers=[
+        ('cat', categorical_transformer, categorical_features)
+    ])
+
+# Create separate pipelines for production and demand prediction
+production_model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
+])
+
+demand_model = Pipeline(steps=[
+    ('preprocessor', preprocessor),
+    ('regressor', RandomForestRegressor(n_estimators=100, random_state=42))
+])
+
+# Train the models
+production_model.fit(X, y_production)
+demand_model.fit(X, y_demand)
+
+# Input values for prediction
+year = int(input("Enter year: "))
+crop_name = input("Enter crop name: ")
+season = input("Enter season: ")
+temperature = float(input("Enter temperature: "))
+humidity = float(input("Enter humidity: "))
+
+# Create a DataFrame with input data
+input_data = pd.DataFrame({'year': [year],
+                           'crop': [crop_name],
+                           'season': [season],
+                           'temperature': [temperature],
+                           'humidity': [humidity]})
+
+# Predict production and demand
+predicted_production = production_model.predict(input_data)
+predicted_demand = demand_model.predict(input_data)
+
+print(f"Predicted production: {predicted_production[0]}")
+print(f"Predicted demand: {predicted_demand[0]}")
